@@ -1,5 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
+import { map } from 'rxjs';
+import { Post } from './post.model';
 
 @Component({
   selector: 'app-root',
@@ -7,7 +9,8 @@ import { Component, OnInit } from '@angular/core';
   styleUrls: ['./app.component.css']
 })
 export class AppComponent  implements OnInit{
- loadedPosts=[];
+ loadedPosts:Post[]=[];
+ isFetching:boolean=false;
 
  constructor(private http:HttpClient){}
 
@@ -18,7 +21,7 @@ export class AppComponent  implements OnInit{
 
  onCreatePost(postData:{title:string, content:string}){
   console.log(postData);
-  this.http.post('https://angular-recipe-c13c6-default-rtdb.firebaseio.com/posts.json',
+  this.http.post<{name:string}>('https://angular-recipe-c13c6-default-rtdb.firebaseio.com/posts.json',
    postData).subscribe(
     (responseData)=>{
       console.log("respns",responseData)
@@ -27,17 +30,25 @@ export class AppComponent  implements OnInit{
  }
 
  onFetchPosts(){
-   this.fetchPosts();
+   this.fetchPosts()
  }
  onClearPosts(){
 
  }
 
  private fetchPosts(){
-   this.http.get('https://angular-recipe-c13c6-default-rtdb.firebaseio.com/posts.json').
-   subscribe(
+  this.isFetching=true;
+   this.http.get('https://angular-recipe-c13c6-default-rtdb.firebaseio.com/posts.json')
+   .pipe(map((responseData:{[key:string]:Post})=>{
+    const postArray:Post[]=[];
+    for(const  key in responseData){
+        postArray.push({...responseData[key],id:key})
+    }
+    return postArray;
+ })).subscribe(
     (posts)=>{
-      console.log("psoot",posts)
+      this.isFetching =false;
+     this.loadedPosts=posts;
     }
    )
  }
