@@ -27,8 +27,9 @@ export class AppComponent  implements OnInit{
  onCreatePost(postData:{title:string, content:string}){
   console.log(postData);
    this.postService.createAndStorePost(postData.title,postData.content).subscribe({
-    next:({name})=>{
-      if(name){
+    next:(responseData)=>{
+      console.log('response',responseData)
+      if(responseData.body.name){
          this.loadedPosts.push(postData);
       }
     },
@@ -72,7 +73,7 @@ export class AppComponent  implements OnInit{
    )
  }
 
- onHandleError(){
+ onHandleError(){ 
   this.error=null;
  }
 }
