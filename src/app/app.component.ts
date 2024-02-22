@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { map } from 'rxjs';
 import { Post } from './post.model';
+import { PostService } from './post.service';
 
 @Component({
   selector: 'app-root',
@@ -11,45 +12,67 @@ import { Post } from './post.model';
 export class AppComponent  implements OnInit{
  loadedPosts:Post[]=[];
  isFetching:boolean=false;
+ error:string=null;
 
- constructor(private http:HttpClient){}
+ constructor(
+  private http:HttpClient,
+  private postService:PostService
+  ){}
 
  ngOnInit(){
-  this.fetchPosts();
+  this.fetchPostsSubscribe();
      
  }
 
  onCreatePost(postData:{title:string, content:string}){
   console.log(postData);
-  this.http.post<{name:string}>('https://angular-recipe-c13c6-default-rtdb.firebaseio.com/posts.json',
-   postData).subscribe(
-    (responseData)=>{
-      console.log("respns",responseData)
-    }
+   this.postService.createAndStorePost(postData.title,postData.content).subscribe({
+    next:({name})=>{
+      if(name){
+         this.loadedPosts.push(postData);
+      }
+    },
+    error:(error:any)=>{
+     this.error=error.message;
+   }
+   }
+    
   )
  }
 
  onFetchPosts(){
-   this.fetchPosts()
+   this.fetchPostsSubscribe()
  }
  onClearPosts(){
-
+     this.postService.deletePosts().subscribe({
+     next: ()=>{
+        this.loadedPosts=[];
+      },
+      error:(error:any)=>{
+        this.error=error.message;
+      }
+  } )
  }
 
- private fetchPosts(){
+ private fetchPostsSubscribe(){
   this.isFetching=true;
-   this.http.get('https://angular-recipe-c13c6-default-rtdb.firebaseio.com/posts.json')
-   .pipe(map((responseData:{[key:string]:Post})=>{
-    const postArray:Post[]=[];
-    for(const  key in responseData){
-        postArray.push({...responseData[key],id:key})
-    }
-    return postArray;
- })).subscribe(
-    (posts)=>{
+  this.postService.fetchPosts()
+   .subscribe({
+    next:posts=>{
       this.isFetching =false;
-     this.loadedPosts=posts;
+      this.loadedPosts=posts;
+    },
+    error:(error:any)=>{
+      console.log('eror',error)
+      this.isFetching =false;
+      this.error=error.message;
     }
+   }
+   
    )
+ }
+
+ onHandleError(){
+  this.error=null;
  }
 }
